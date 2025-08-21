@@ -128,7 +128,7 @@
             },
             reset(player, index) {
                 player.history.splice(index);
-                player.score = player.history[index - 1].new_score ?? 0;
+                player.score = player.history[index - 1]?.new_score ?? 0;
             },
             addPlayer(player) {
                 if (this.score === 0) return;
