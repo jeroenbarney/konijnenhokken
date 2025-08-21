@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="https://unpkg.com/vue@3"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+</head>
+<body>
+<div id="app" class="container pt-5">
+    <button class="btn btn-warning" @click="startGame()">Start game</button>
+    <div class="text-center">
+        <div class="btn-group">
+            <button class="btn btn-success" :class="{active: (i+1 === multiplier)}" v-for="(_,i) in [...Array(5)]"
+                    @click="multiplier = i+1">
+                <i :class="`bi bi-${i+1}-circle`"></i>
+            </button>
+        </div>
+    </div>
+    <input type="number" step="1" v-model="score" class="form-control"/>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>Naam</th>
+                <th>Score</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <template v-for="player in players">
+                <tr>
+                    <td>{{ player.name }}</td>
+                    <td>{{ player.score }}</td>
+                    <td class="text-end">
+                        <button class="btn mx-2 btn-success" @click="addPlayer(player)">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                        <button class="btn btn-primary" @click="showHistory(player)">
+                            <i class="bi bi-clock-history"></i>
+                        </button>
+                    </td>
+                </tr>
+                <tr v-if="player.show_history">
+                    <td v-if="player.history.length === 0" colspan="3">
+                        <span class="text-muted">Geen geschiedenis</span>
+                    </td>
+                    <td colspan="3" v-else>
+                        <table class="table table-striped w-auto text-end">
+                            <tbody>
+                            <template v-for="(h,index) in player.history">
+                                <tr>
+                                    <td>{{ h.old_score }}</td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        + {{ h.score }}
+                                    </td>
+                                    <td>=</td>
+                                    <td>{{ h.new_score }}</td>
+                                    <td class="text-end">
+                                        <button class="btn" @click="reset(player,index)">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+            </template>
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    Vue.createApp({
+        data: () => ({
+            score: 0,
+            multiplier: 1,
+            players: [],
+        }),
+        mounted() {
+            try {
+                this.players = JSON.parse(localStorage.getItem('players'));
+            } catch (e) {
+                this.players = [];
+            }
+            if (this.players == null) {
+                this.players = [];
+            }
+        },
+        watch: {
+            players: {
+                deep: true,
+                handler() {
+                    localStorage.setItem('players', JSON.stringify(this.players));
+                }
+            }
+        },
+        methods: {
+            startGame() {
+                if (!confirm('Huidige game resetten?')) return;
+                this.players = [];
+                const amount = prompt('Hoeveel spelers zijn er?', 2);
+                for (let i = 0; i < amount; i++) {
+                    this.players.push({
+                        score: 0,
+                        name: prompt(`Naam speler ${i + 1}`),
+                        history: [],
+                        open_history: false,
+                    })
+                }
+            },
+            showHistory(player) {
+                const show = !player.show_history;
+                this.players.forEach(p => p.show_history = false);
+                if (show) player.show_history = true;
+            },
+            reset(player, index) {
+                player.history.splice(index);
+                player.score = player.history[index - 1].new_score ?? 0;
+            },
+            addPlayer(player) {
+                if (this.score === 0) return;
+                const score = (this.multiplier * this.score);
+                player.history.push({
+                    old_score: player.score,
+                    score,
+                    new_score: player.score += score
+                })
+                this.score = 0;
+                this.multiplier = 1;
+                if (player.score >= 330) {
+                    setTimeout(() => {
+                        alert(`${player.name} heeft gewonnen!`)
+                    }, 100)
+                }
+            }
+        }
+    }).mount('#app')
+</script>
+</body>
+</html>
